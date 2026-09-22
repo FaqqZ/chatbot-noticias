@@ -144,20 +144,33 @@ def main() -> None:
 
     offset = _load_offset()
     updates = _get_updates(token, offset)
+    print(f"offset inicial={offset} updates recibidos={len(updates)}")
 
     for update in updates:
         offset = update["update_id"] + 1
         message = update.get("message")
         if not message or "text" not in message:
+            print(f"update {update['update_id']}: sin mensaje de texto, se ignora")
             continue
         chat_id = str(message["chat"]["id"])
-        if chat_id != authorized_chat_id:
-            continue  # ignorar mensajes de cualquier chat que no sea el del dueño
         text = message["text"]
+        print(f"update {update['update_id']}: chat_id={chat_id} texto={text!r}")
+        if chat_id != authorized_chat_id:
+            print(f"  -> ignorado: chat_id no autorizado (esperado {authorized_chat_id})")
+            continue
         if text.startswith("/"):
-            handle_command(text, token, chat_id)
+            print(f"  -> procesando comando")
+            try:
+                handle_command(text, token, chat_id)
+                print(f"  -> comando procesado OK")
+            except Exception as exc:
+                print(f"  -> ERROR procesando comando: {exc!r}")
+                raise
+        else:
+            print(f"  -> no es un comando (no empieza con '/'), se ignora")
 
     _save_offset(offset)
+    print(f"offset final={offset}")
 
 
 if __name__ == "__main__":
