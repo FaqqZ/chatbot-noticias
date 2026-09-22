@@ -10,7 +10,7 @@ const REPO = "chatbot-noticias";
 
 const WORKFLOWS_BY_CRON = {
   "0 10 * * *": "daily-report.yml",
-  "*/5 * * * *": "bot-interact.yml",
+  "* * * * *": "bot-interact.yml",
 };
 
 async function dispatchWorkflow(workflowFile, token) {

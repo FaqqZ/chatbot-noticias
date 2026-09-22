@@ -5,4 +5,4 @@ compatibility_date = "2026-09-22"
 # Dispara los workflows de GitHub Actions a horario exacto, porque el
 # `schedule` propio de GitHub Actions no es confiable (ver README).
 [triggers]
-crons = ["0 10 * * *", "*/5 * * * *"]
+crons = ["0 10 * * *", "* * * * *"]

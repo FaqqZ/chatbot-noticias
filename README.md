@@ -16,9 +16,10 @@ Corre solo en GitHub Actions (no depende de tu computadora).
 5. Guarda los links ya enviados en `seen_urls.json` para no repetir noticias
    al día siguiente.
 
-Además, otro workflow (`bot-interact.yml`) revisa cada 5 minutos si le
+Además, otro workflow (`bot-interact.yml`) revisa cada minuto si le
 escribiste algo al bot y responde a comandos (ver "Comandos del bot" más
-abajo).
+abajo). La demora típica de respuesta es de 1-2 minutos (esperar al próximo
+chequeo + que GitHub arranque el runner).
 
 **Importante**: el `schedule` propio de GitHub Actions no es confiable (puede
 demorar minutos u horas). El disparo real a horario exacto lo hace un

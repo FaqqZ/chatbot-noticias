@@ -52,8 +52,13 @@ npx wrangler deploy
 ```
 
 Con eso los Cron Triggers quedan activos: todos los días a las 10:00 UTC
-(7:00 Argentina) dispara `daily-report.yml`, y cada 5 minutos dispara
-`bot-interact.yml`.
+(7:00 Argentina) dispara `daily-report.yml`, y cada minuto dispara
+`bot-interact.yml` (demora real de respuesta del bot: 1-2 minutos, sumando
+el runner de GitHub).
+
+Nota: un Cron Trigger recién creado puede tardar varios minutos en
+activarse la primera vez. Es normal que no dispare apenas termina el
+`deploy` — probalo con las URLs de la sección de abajo mientras tanto.
 
 ## Probar manualmente
 
