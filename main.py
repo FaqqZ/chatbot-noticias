@@ -7,7 +7,7 @@ from datetime import datetime
 from pathlib import Path
 from html import escape
 
-from filters import filter_articles, load_keywords
+from filters import filter_articles, load_exclude_keywords, load_keywords
 from notifier import send_telegram_message
 from sources import Article, fetch_articles, load_sources
 
@@ -40,12 +40,13 @@ def build_report(grouped: dict[str, list[Article]]) -> str:
 def main() -> None:
     sources = load_sources()
     keywords = load_keywords()
+    exclude_keywords = load_exclude_keywords()
     articles = fetch_articles(sources)
 
     seen_urls = load_seen_urls()
     new_articles = [a for a in articles if a.link not in seen_urls]
 
-    grouped = filter_articles(new_articles, keywords)
+    grouped = filter_articles(new_articles, keywords, exclude_keywords)
     total_matches = sum(len(v) for v in grouped.values())
 
     if total_matches == 0:

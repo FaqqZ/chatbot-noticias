@@ -6,10 +6,33 @@ keywords:
   - San Miguel de Tucumán
   - municipalidad de Tucumán
   - Rossana Chahla
-  - intendenta
   - accidente
   - incendio
   - alerta climatológica
   - eventos
   - prevención
   - emergencia
+
+# Artículos que matchean alguna keyword de arriba pero también mencionan
+# algo de esta lista se descartan igual (ej. notas de deportes que
+# mencionan "Tucumán" o "accidente" en un contexto deportivo).
+exclude_keywords:
+  - fútbol
+  - futbolista
+  - gol
+  - goles
+  - partido
+  - liga tucumana
+  - torneo
+  - campeonato
+  - hincha
+  - hinchada
+  - club atlético
+  - San Martín de Tucumán
+  - Atlético Tucumán
+  - Boca Juniors
+  - River Plate
+  - básquet
+  - rugby
+  - hipódromo
+  - automovilismo

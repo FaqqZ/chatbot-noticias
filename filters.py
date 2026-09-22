@@ -10,9 +10,18 @@ from sources import Article
 
 
 def load_keywords(path: str = "keywords.yaml") -> list[str]:
-    with open(path, encoding="utf-8") as f:
-        config = yaml.safe_load(f)
+    config = _load_config(path)
     return config["keywords"]
+
+
+def load_exclude_keywords(path: str = "keywords.yaml") -> list[str]:
+    config = _load_config(path)
+    return config.get("exclude_keywords", [])
+
+
+def _load_config(path: str) -> dict:
+    with open(path, encoding="utf-8") as f:
+        return yaml.safe_load(f)
 
 
 def _normalize(text: str) -> str:
@@ -30,10 +39,24 @@ def match_keyword(article: Article, keywords: list[str]) -> str | None:
     return None
 
 
-def filter_articles(articles: list[Article], keywords: list[str]) -> dict[str, list[Article]]:
-    """Agrupa los artículos que matchean por la keyword encontrada."""
+def is_excluded(article: Article, exclude_keywords: list[str]) -> bool:
+    haystack = _normalize(f"{article.title} {article.summary}")
+    return any(_normalize(kw) in haystack for kw in exclude_keywords)
+
+
+def filter_articles(
+    articles: list[Article],
+    keywords: list[str],
+    exclude_keywords: list[str] | None = None,
+) -> dict[str, list[Article]]:
+    """Agrupa los artículos que matchean por la keyword encontrada, salvo que
+    también matcheen alguna palabra de exclude_keywords (ej. temas de
+    deportes que no interesan aunque mencionen Tucumán)."""
+    exclude_keywords = exclude_keywords or []
     grouped: dict[str, list[Article]] = {}
     for article in articles:
+        if is_excluded(article, exclude_keywords):
+            continue
         keyword = match_keyword(article, keywords)
         if keyword:
             grouped.setdefault(keyword, []).append(article)
