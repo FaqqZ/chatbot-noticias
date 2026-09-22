@@ -2,8 +2,9 @@ name = "tucuman-news-scheduler"
 main = "src/index.js"
 compatibility_date = "2026-09-22"
 
-# Dispara el informe diario a horario exacto, porque el `schedule` propio de
-# GitHub Actions no es confiable (ver README). Los comandos del bot ya no
-# usan cron: llegan por webhook de Telegram (ver src/index.js).
+# Dispara el informe cada 2 horas (en punto, hora UTC) a horario exacto,
+# porque el `schedule` propio de GitHub Actions no es confiable (ver
+# README). Los comandos del bot ya no usan cron: llegan por webhook de
+# Telegram (ver src/index.js).
 [triggers]
-crons = ["0 10 * * *"]
+crons = ["0 */2 * * *"]

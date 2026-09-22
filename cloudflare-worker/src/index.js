@@ -327,7 +327,7 @@ async function handleTelegramWebhook(request, env) {
 
 export default {
   async scheduled(event, env, ctx) {
-    if (event.cron === "0 10 * * *") {
+    if (event.cron === "0 */2 * * *") {
       ctx.waitUntil(dispatchWorkflow("daily-report.yml", env.GITHUB_TOKEN));
     }
   },

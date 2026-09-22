@@ -2,11 +2,11 @@
 
 Este Worker hace dos cosas:
 
-1. **Dispara el informe diario a horario exacto.** El `schedule` (cron)
-   propio de GitHub Actions no es confiable (puede demorar minutos u horas).
-   Este Worker usa un Cron Trigger de Cloudflare (que sí es confiable) para
-   llamar a la API de GitHub (`workflow_dispatch`) todos los días a las
-   10:00 UTC.
+1. **Dispara el informe a horario exacto, cada 2 horas.** El `schedule`
+   (cron) propio de GitHub Actions no es confiable (puede demorar minutos u
+   horas). Este Worker usa un Cron Trigger de Cloudflare (que sí es
+   confiable) para llamar a la API de GitHub (`workflow_dispatch`) cada 2
+   horas en punto (hora UTC).
 2. **Recibe los comandos del bot de Telegram por webhook**, no por polling.
    Telegram le pega directo al Worker apenas mandás un mensaje — nada de
    esperar a que un cron revise cada tanto. `/keywords`, `/agregar`,

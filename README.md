@@ -6,8 +6,8 @@ Corre solo en GitHub Actions (no depende de tu computadora).
 
 ## Cómo funciona
 
-1. Un workflow de GitHub Actions se dispara todos los días a las 07:00 (hora
-   Argentina).
+1. Un workflow de GitHub Actions se dispara cada 2 horas en punto (hora
+   UTC).
 2. `main.py` trae los artículos de los feeds RSS listados en `sources.yaml`,
    más las noticias oficiales del Municipio (`comunicacionsmt.py`, scraping
    de comunicacionsmt.gob.ar — no tiene RSS).
@@ -92,8 +92,8 @@ llegarte un mensaje de Telegram en menos de un minuto.
 Le podés escribir directamente a tu bot en Telegram:
 
 - `/informe` — manda el informe de noticias relevantes en el momento (no
-  espera a las 7 AM). Tarda ~30-60s, porque dispara el pipeline completo en
-  GitHub Actions.
+  espera al próximo envío automático cada 2hs). Tarda ~30-60s, porque
+  dispara el pipeline completo en GitHub Actions.
 - `/eventos` — últimos eventos publicados en la Agenda Cultural del
   Municipio (agendaculturalsmt.com). Respuesta casi instantánea. Muestra la
   fecha de *publicación* en la agenda, no la fecha en que ocurre el evento
