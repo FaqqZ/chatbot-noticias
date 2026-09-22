@@ -7,6 +7,7 @@ from datetime import datetime
 from pathlib import Path
 from html import escape
 
+from events import MunicipalEvent, fetch_municipal_events
 from filters import (
     RankedArticle,
     load_exclude_keywords,
@@ -16,6 +17,8 @@ from filters import (
 )
 from notifier import send_telegram_message
 from sources import fetch_articles, load_sources
+
+MAX_EVENTS = 5
 
 SEEN_URLS_PATH = Path("seen_urls.json")
 MAX_SEEN_URLS = 2000  # evita que el archivo crezca indefinidamente
@@ -32,7 +35,7 @@ def save_seen_urls(urls: set[str]) -> None:
     SEEN_URLS_PATH.write_text(json.dumps(trimmed, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
-def build_report(ranked: list[RankedArticle]) -> str:
+def build_report(ranked: list[RankedArticle], events: list[MunicipalEvent]) -> str:
     today = datetime.now().strftime("%d/%m/%Y")
     lines = [f"<b>Informe de noticias — San Miguel de Tucumán</b>", f"{today}", ""]
     for item in ranked:
@@ -40,6 +43,14 @@ def build_report(ranked: list[RankedArticle]) -> str:
         tags = " ".join(f"#{escape(kw.replace(' ', ''))}" for kw in item.matched_keywords)
         lines.append(f'• <a href="{escape(article.link)}">{escape(article.title)}</a> ({escape(article.source)})')
         lines.append(f"  {tags}")
+
+    if events:
+        if ranked:
+            lines.append("")
+        lines.append("<b>🎭 Agenda Cultural del Municipio</b> (últimos eventos publicados)")
+        for event in events:
+            lines.append(f'• <a href="{escape(event.link)}">{escape(event.title)}</a> (publicado {event.published})')
+
     return "\n".join(lines).strip()
 
 
@@ -55,10 +66,15 @@ def main() -> None:
 
     ranked = rank_articles(new_articles, keywords, exclude_keywords, max_results)
 
-    if not ranked:
+    try:
+        events = fetch_municipal_events(MAX_EVENTS)
+    except Exception:
+        events = []  # si falla la agenda cultural, no debe tumbar el informe de noticias
+
+    if not ranked and not events:
         send_telegram_message("Informe de noticias de San Miguel de Tucumán: sin novedades relevantes hoy.")
     else:
-        send_telegram_message(build_report(ranked))
+        send_telegram_message(build_report(ranked, events))
 
     seen_urls.update(item.article.link for item in ranked)
     # También marcamos como vistos todos los artículos traídos en esta corrida

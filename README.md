@@ -12,19 +12,30 @@ Corre solo en GitHub Actions (no depende de tu computadora).
 3. Filtra por `keywords.yaml`, descarta lo que matchea `exclude_keywords`
    (ej. deportes), puntúa por relevancia, deduplica la misma noticia cubierta
    por varios medios y se queda con las `max_results` más importantes.
-4. Envía el informe a tu chat de Telegram.
-5. Guarda los links ya enviados en `seen_urls.json` para no repetir noticias
+4. Suma los últimos eventos publicados en la Agenda Cultural del Municipio
+   (`events.py`, fuente: agendaculturalsmt.com).
+5. Envía el informe a tu chat de Telegram.
+6. Guarda los links ya enviados en `seen_urls.json` para no repetir noticias
    al día siguiente.
 
-Además, otro workflow (`bot-interact.yml`) revisa cada minuto si le
-escribiste algo al bot y responde a comandos (ver "Comandos del bot" más
-abajo). La demora típica de respuesta es de 1-2 minutos (esperar al próximo
-chequeo + que GitHub arranque el runner).
+**Sobre los eventos municipales**: se muestran los últimos publicados en la
+agenda cultural oficial, con su fecha de *publicación* — el sitio no expone
+de forma confiable la fecha en la que ocurre cada evento (esa parte del
+calendario se carga por JavaScript), así que no se puede filtrar
+estrictamente "todavía no pasó".
+
+Además, un Cloudflare Worker recibe por **webhook** (no polling) los mensajes
+que le mandes al bot y responde a comandos (ver "Comandos del bot" más
+abajo) — `/keywords`, `/agregar`, `/quitar` y `/ayuda` responden casi al
+instante, sin pasar por GitHub Actions. Solo `/informe` dispara GitHub
+Actions (tarda ~30-60s, porque corre el pipeline completo de Python).
 
 **Importante**: el `schedule` propio de GitHub Actions no es confiable (puede
-demorar minutos u horas). El disparo real a horario exacto lo hace un
-Cloudflare Worker — ver [`cloudflare-worker/README.md`](cloudflare-worker/README.md)
-para el setup (obligatorio para que esto corra solo, sin intervención).
+demorar minutos u horas) y no sirve para recibir mensajes de Telegram en
+tiempo real. Todo el disparo a horario exacto y la recepción de comandos la
+hace un Cloudflare Worker — ver
+[`cloudflare-worker/README.md`](cloudflare-worker/README.md) para el setup
+(obligatorio para que esto funcione).
 
 ## Setup (una sola vez)
 
@@ -83,15 +94,22 @@ llegarte un mensaje de Telegram en menos de un minuto.
 Le podés escribir directamente a tu bot en Telegram:
 
 - `/informe` — manda el informe de noticias relevantes en el momento (no
-  espera a las 7 AM).
+  espera a las 7 AM). Tarda ~30-60s, porque dispara el pipeline completo en
+  GitHub Actions.
+- `/eventos` — últimos eventos publicados en la Agenda Cultural del
+  Municipio. Respuesta casi instantánea.
 - `/keywords` — lista las palabras clave, exclusiones y medios activos.
+  Respuesta casi instantánea.
 - `/agregar <palabra>` — suma una palabra clave a `keywords.yaml` (commitea
-  el cambio automáticamente).
-- `/quitar <palabra>` — saca una palabra clave.
+  el cambio automáticamente vía la API de GitHub). Respuesta casi
+  instantánea.
+- `/quitar <palabra>` — saca una palabra clave. Ídem.
 - `/ayuda` — lista estos comandos.
 
-Solo responde a mensajes del `chat_id` configurado en los secrets — otros
-usuarios que le escriban al bot son ignorados.
+Solo responde a mensajes del `chat_id` configurado en los secrets del
+Worker — otros usuarios que le escriban al bot son ignorados. Además valida
+un token secreto propio del webhook (`WEBHOOK_SECRET`), así que ni siquiera
+alguien que adivine la URL del Worker puede mandar comandos falsos.
 
 ## Agregar o quitar medios
 
