@@ -1,9 +1,10 @@
-name: Informe diario de noticias
+name: Interacción del bot
 
 on:
   schedule:
-    # 10:00 UTC = 07:00 hora Argentina (UTC-3)
-    - cron: "0 10 * * *"
+    # Cada 5 minutos. GitHub puede demorar la ejecución en momentos de
+    # mucha carga, así que la respuesta no es instantánea.
+    - cron: "*/5 * * * *"
   workflow_dispatch: {}
 
 permissions:
@@ -14,7 +15,7 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  send-report:
+  poll:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -26,16 +27,16 @@ jobs:
       - name: Instalar dependencias
         run: pip install -r requirements.txt
 
-      - name: Generar y enviar informe
+      - name: Procesar comandos entrantes
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-        run: python main.py
+        run: python bot.py
 
-      - name: Guardar seen_urls.json actualizado
+      - name: Guardar cambios (offset, keywords, seen_urls)
         run: |
           git config user.name "tucuman-news-monitor bot"
           git config user.email "actions@github.com"
-          git add seen_urls.json
-          git diff --cached --quiet || git commit -m "Actualizar noticias vistas"
+          git add bot_offset.json keywords.yaml seen_urls.json
+          git diff --cached --quiet || git commit -m "Bot: procesar comandos entrantes"
           git push

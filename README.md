@@ -9,10 +9,17 @@ Corre solo en GitHub Actions (no depende de tu computadora).
 1. Un workflow de GitHub Actions se dispara todos los días a las 07:00 (hora
    Argentina).
 2. `main.py` trae los artículos de los feeds RSS listados en `sources.yaml`.
-3. Filtra los que matchean alguna palabra clave de `keywords.yaml`.
-4. Envía el informe agrupado por palabra clave a tu chat de Telegram.
+3. Filtra por `keywords.yaml`, descarta lo que matchea `exclude_keywords`
+   (ej. deportes), puntúa por relevancia, deduplica la misma noticia cubierta
+   por varios medios y se queda con las `max_results` más importantes.
+4. Envía el informe a tu chat de Telegram.
 5. Guarda los links ya enviados en `seen_urls.json` para no repetir noticias
    al día siguiente.
+
+Además, otro workflow (`bot-interact.yml`) revisa cada 5 minutos si le
+escribiste algo al bot y responde a comandos (ver "Comandos del bot" más
+abajo). No es instantáneo — GitHub puede demorar la ejecución programada
+unos minutos.
 
 ## Setup (una sola vez)
 
@@ -65,6 +72,21 @@ El matching es case-insensitive y no distingue acentos.
 
 En GitHub: **Actions → Informe diario de noticias → Run workflow**. Debería
 llegarte un mensaje de Telegram en menos de un minuto.
+
+## Comandos del bot
+
+Le podés escribir directamente a tu bot en Telegram:
+
+- `/informe` — manda el informe de noticias relevantes en el momento (no
+  espera a las 7 AM).
+- `/keywords` — lista las palabras clave, exclusiones y medios activos.
+- `/agregar <palabra>` — suma una palabra clave a `keywords.yaml` (commitea
+  el cambio automáticamente).
+- `/quitar <palabra>` — saca una palabra clave.
+- `/ayuda` — lista estos comandos.
+
+Solo responde a mensajes del `chat_id` configurado en los secrets — otros
+usuarios que le escriban al bot son ignorados.
 
 ## Agregar o quitar medios
 
