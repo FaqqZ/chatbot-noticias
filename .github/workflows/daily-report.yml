@@ -38,5 +38,12 @@ jobs:
           git config user.name "tucuman-news-monitor bot"
           git config user.email "actions@github.com"
           git add seen_urls.json
-          git diff --cached --quiet || git commit -m "Actualizar noticias vistas"
-          git push
+          git diff --cached --quiet && exit 0
+          git commit -m "Actualizar noticias vistas"
+          for i in 1 2 3 4 5; do
+            git push && exit 0
+            echo "push rechazado, reintentando con rebase ($i/5)..."
+            git pull --rebase origin main
+            sleep $((RANDOM % 5 + 1))
+          done
+          exit 1
