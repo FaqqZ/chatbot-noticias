@@ -1,7 +1,12 @@
-# Palabras clave a monitorear. El informe agrupa las noticias por la primera
-# palabra clave que matchea. Editar esta lista para ajustar qué se rastrea.
+# Palabras clave a monitorear. Editar esta lista para ajustar qué se rastrea.
 # El matching es case-insensitive y no distingue acentos (ej. "tucuman"
 # matchea "Tucumán").
+#
+# El informe no lista todo lo que matchea: evalúa relevancia (más keywords
+# matcheadas = más relevante), descarta noticias repetidas cubiertas por
+# varios medios y se queda solo con las `max_results` más importantes.
+max_results: 10
+
 keywords:
   - San Miguel de Tucumán
   - municipalidad de Tucumán
