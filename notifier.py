@@ -30,10 +30,22 @@ def send_telegram_message(text: str) -> None:
 
 
 def _split_message(text: str) -> list[str]:
+    """Parte el texto en chunks respetando límites de línea, para nunca
+    cortar una etiqueta HTML (ej. <a href="...">...</a>) a la mitad."""
     if len(text) <= MAX_MESSAGE_LENGTH:
         return [text]
+
     chunks = []
-    while text:
-        chunks.append(text[:MAX_MESSAGE_LENGTH])
-        text = text[MAX_MESSAGE_LENGTH:]
+    current_lines: list[str] = []
+    current_len = 0
+    for line in text.split("\n"):
+        added_len = len(line) + 1  # +1 por el \n
+        if current_lines and current_len + added_len > MAX_MESSAGE_LENGTH:
+            chunks.append("\n".join(current_lines))
+            current_lines = []
+            current_len = 0
+        current_lines.append(line)
+        current_len += added_len
+    if current_lines:
+        chunks.append("\n".join(current_lines))
     return chunks
