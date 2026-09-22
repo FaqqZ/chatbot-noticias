@@ -6,9 +6,10 @@
  *    confiable.
  * 2. `fetch()` en POST /telegram-webhook: recibe los mensajes del bot de
  *    Telegram en tiempo real (webhook, no polling) y resuelve los comandos
- *    simples (/keywords, /eventos, /agregar, /quitar, /ayuda) directo acá
- *    — /keywords y /agregar/quitar leen y escriben keywords.yaml vía la API
- *    de contenidos de GitHub, /eventos consulta agendaculturalsmt.com — sin
+ *    simples (/keywords, /eventos, /agregar, /quitar, /limpiar, /ayuda)
+ *    directo acá — /keywords y /agregar/quitar leen y escriben
+ *    keywords.yaml, /limpiar vacía seen_urls.json, todo vía la API de
+ *    contenidos de GitHub; /eventos consulta agendaculturalsmt.com — sin
  *    pasar por GitHub Actions, así que la respuesta es casi instantánea.
  *    Solo /informe dispara GitHub Actions, porque necesita correr el
  *    pipeline de Python (traer RSS, rankear, deduplicar).
@@ -26,6 +27,7 @@ const HELP_TEXT =
   "/keywords — ver palabras clave, exclusiones y medios activos\n" +
   "/agregar <palabra> — sumar una palabra clave a rastrear\n" +
   "/quitar <palabra> — sacar una palabra clave\n" +
+  "/limpiar — limpiar el caché de noticias vistas (el próximo /informe trae todo de nuevo, incluso lo ya mostrado)\n" +
   "/ayuda — ver esta ayuda";
 
 const EVENTS_API_URL = "https://agendaculturalsmt.com/wp-json/wp/v2/ajde_events";
@@ -167,6 +169,12 @@ async function handleRemoveKeyword(env, word) {
   return `No encontré "${word}" en la lista de palabras clave.`;
 }
 
+async function handleClearCache(env) {
+  const { sha } = await getFile("seen_urls.json", env.GITHUB_TOKEN);
+  await putFile("seen_urls.json", "[]\n", sha, "Bot: limpiar caché de noticias vistas", env.GITHUB_TOKEN);
+  return "Listo, limpié el caché. El próximo /informe va a traer todo de nuevo (incluso lo que ya te mostré antes).";
+}
+
 async function describeConfig(env) {
   const [{ content: keywordsFile }, { content: sourcesFile }] = await Promise.all([
     getFile("keywords.yaml", env.GITHUB_TOKEN),
@@ -297,6 +305,9 @@ async function handleTelegramWebhook(request, env) {
         break;
       case "/quitar":
         await replyTelegram(env, arg ? await handleRemoveKeyword(env, arg) : "Uso: /quitar <palabra clave>");
+        break;
+      case "/limpiar":
+        await replyTelegram(env, await handleClearCache(env));
         break;
       case "/informe":
         await dispatchWorkflow("daily-report.yml", env.GITHUB_TOKEN);

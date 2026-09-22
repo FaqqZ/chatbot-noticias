@@ -105,6 +105,9 @@ Le podés escribir directamente a tu bot en Telegram:
   el cambio automáticamente vía la API de GitHub). Respuesta casi
   instantánea.
 - `/quitar <palabra>` — saca una palabra clave. Ídem.
+- `/limpiar` — vacía `seen_urls.json` (el caché de noticias ya mostradas).
+  El próximo `/informe` vuelve a traer todo lo que matchea tus keywords,
+  aunque ya lo hayas visto. Respuesta casi instantánea.
 - `/ayuda` — lista estos comandos.
 
 Solo responde a mensajes del `chat_id` configurado en los secrets del
