@@ -18,8 +18,12 @@ Corre solo en GitHub Actions (no depende de tu computadora).
 
 Además, otro workflow (`bot-interact.yml`) revisa cada 5 minutos si le
 escribiste algo al bot y responde a comandos (ver "Comandos del bot" más
-abajo). No es instantáneo — GitHub puede demorar la ejecución programada
-unos minutos.
+abajo).
+
+**Importante**: el `schedule` propio de GitHub Actions no es confiable (puede
+demorar minutos u horas). El disparo real a horario exacto lo hace un
+Cloudflare Worker — ver [`cloudflare-worker/README.md`](cloudflare-worker/README.md)
+para el setup (obligatorio para que esto corra solo, sin intervención).
 
 ## Setup (una sola vez)
 

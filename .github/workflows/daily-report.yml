@@ -1,9 +1,10 @@
 name: Informe diario de noticias
 
 on:
-  schedule:
-    # 10:00 UTC = 07:00 hora Argentina (UTC-3)
-    - cron: "0 10 * * *"
+  # El schedule de GitHub Actions no es confiable (puede demorar horas), así
+  # que el disparo real viene de un Cron Trigger de Cloudflare Workers que
+  # llama a la API de "workflow_dispatch" a horario exacto. Ver
+  # cloudflare-worker/.
   workflow_dispatch: {}
 
 permissions:

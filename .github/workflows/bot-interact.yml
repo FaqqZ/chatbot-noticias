@@ -1,10 +1,10 @@
 name: Interacción del bot
 
 on:
-  schedule:
-    # Cada 5 minutos. GitHub puede demorar la ejecución en momentos de
-    # mucha carga, así que la respuesta no es instantánea.
-    - cron: "*/5 * * * *"
+  # El schedule de GitHub Actions no es confiable para intervalos cortos
+  # (en la práctica corre cada varias horas, no cada 5 min). El disparo real
+  # viene de un Cron Trigger de Cloudflare Workers que llama a la API de
+  # "workflow_dispatch" cada 5 minutos. Ver cloudflare-worker/.
   workflow_dispatch: {}
 
 permissions:
