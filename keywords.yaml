@@ -1,0 +1,6 @@
+# Palabras clave a monitorear. El informe agrupa las noticias por la primera
+# palabra clave que matchea. Editar esta lista para ajustar qué se rastrea.
+# El matching es case-insensitive y no distingue acentos (ej. "tucuman"
+# matchea "Tucumán").
+keywords:
+  - San Miguel de Tucumán

@@ -1,0 +1,37 @@
+name: Informe diario de noticias
+
+on:
+  schedule:
+    # 10:00 UTC = 07:00 hora Argentina (UTC-3)
+    - cron: "0 10 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  send-report:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Instalar dependencias
+        run: pip install -r requirements.txt
+
+      - name: Generar y enviar informe
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python main.py
+
+      - name: Guardar seen_urls.json actualizado
+        run: |
+          git config user.name "tucuman-news-monitor bot"
+          git config user.email "actions@github.com"
+          git add seen_urls.json
+          git diff --cached --quiet || git commit -m "Actualizar noticias vistas"
+          git push

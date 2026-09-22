@@ -1,0 +1,13 @@
+# Medios locales de San Miguel de Tucumán a monitorear.
+# Cada fuente necesita un "name" (se muestra en el informe) y una "rss_url".
+# Para agregar un medio nuevo: buscar si tiene una URL de RSS (probar
+# /rss, /feed, /rss.xml) y agregarlo acá con el mismo formato.
+sources:
+  - name: La Gaceta
+    rss_url: https://www.lagaceta.com.ar/rss
+  - name: El Tucumano
+    rss_url: https://www.eltucumano.com/rss
+  - name: Primera Fuente
+    rss_url: https://www.primerafuente.com.ar/rss
+  - name: Tucumán Despierta
+    rss_url: https://tucumandespierta.com/feed
