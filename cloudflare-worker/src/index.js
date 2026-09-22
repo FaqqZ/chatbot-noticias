@@ -176,6 +176,7 @@ async function describeConfig(env) {
   const keywords = extractListSection(kwLines, "keywords:");
   const exclude = extractListSection(kwLines, "exclude_keywords:");
   const sourceNames = [...sourcesFile.matchAll(/^\s*-\s*name:\s*(.+)$/gm)].map((m) => m[1].trim());
+  sourceNames.push("Municipalidad de SMT (comunicacionsmt.gob.ar, scraping)");
 
   return [
     "<b>Palabras clave:</b>",

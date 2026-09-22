@@ -2,6 +2,10 @@
 # Cada fuente necesita un "name" (se muestra en el informe) y una "rss_url".
 # Para agregar un medio nuevo: buscar si tiene una URL de RSS (probar
 # /rss, /feed, /rss.xml) y agregarlo acá con el mismo formato.
+#
+# El portal oficial del Municipio (comunicacionsmt.gob.ar) NO tiene RSS, así
+# que no está acá: se trae por scraping en comunicacionsmt.py y se suma al
+# pipeline en main.py.
 sources:
   - name: La Gaceta
     rss_url: https://www.lagaceta.com.ar/rss

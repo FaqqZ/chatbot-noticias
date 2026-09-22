@@ -8,7 +8,9 @@ Corre solo en GitHub Actions (no depende de tu computadora).
 
 1. Un workflow de GitHub Actions se dispara todos los días a las 07:00 (hora
    Argentina).
-2. `main.py` trae los artículos de los feeds RSS listados en `sources.yaml`.
+2. `main.py` trae los artículos de los feeds RSS listados en `sources.yaml`,
+   más las noticias oficiales del Municipio (`comunicacionsmt.py`, scraping
+   de comunicacionsmt.gob.ar — no tiene RSS).
 3. Filtra por `keywords.yaml`, descarta lo que matchea `exclude_keywords`
    (ej. deportes), puntúa por relevancia, deduplica la misma noticia cubierta
    por varios medios y se queda con las `max_results` más importantes.
@@ -116,6 +118,13 @@ alguien que adivine la URL del Worker puede mandar comandos falsos.
 Editá `sources.yaml`. Cada fuente necesita un `name` y una `rss_url`. Para
 verificar si un medio nuevo tiene RSS, probá abrir `<sitio>/rss`,
 `<sitio>/feed` o `<sitio>/rss.xml` en el navegador.
+
+Para un medio sin RSS hace falta un scraper dedicado (como
+`comunicacionsmt.py`), no alcanza con agregarlo a `sources.yaml`. Nota sobre
+comunicacionsmt.gob.ar: el calendario de eventos de ese sitio (`/get_events`)
+está protegido por un WAF/Cloudflare que bloquea accesos automatizados
+(devuelve 403/404 según los headers) — por eso se scrapea el listado de
+noticias (`/categoria/177/noticias`, sí accesible) en vez del calendario.
 
 ## Desarrollo local
 

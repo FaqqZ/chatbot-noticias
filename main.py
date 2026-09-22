@@ -7,6 +7,7 @@ from datetime import datetime
 from pathlib import Path
 from html import escape
 
+from comunicacionsmt import fetch_comunicacionsmt_articles
 from events import MunicipalEvent, fetch_municipal_events
 from filters import (
     RankedArticle,
@@ -60,6 +61,11 @@ def main() -> None:
     exclude_keywords = load_exclude_keywords()
     max_results = load_max_results()
     articles = fetch_articles(sources)
+
+    try:
+        articles += fetch_comunicacionsmt_articles()
+    except Exception:
+        pass  # si falla el scraping del Municipio, no debe tumbar el resto del informe
 
     seen_urls = load_seen_urls()
     new_articles = [a for a in articles if a.link not in seen_urls]
