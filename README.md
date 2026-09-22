@@ -14,17 +14,13 @@ Corre solo en GitHub Actions (no depende de tu computadora).
 3. Filtra por `keywords.yaml`, descarta lo que matchea `exclude_keywords`
    (ej. deportes), puntúa por relevancia, deduplica la misma noticia cubierta
    por varios medios y se queda con las `max_results` más importantes.
-4. Suma los últimos eventos publicados en la Agenda Cultural del Municipio
-   (`events.py`, fuente: agendaculturalsmt.com).
-5. Envía el informe a tu chat de Telegram.
-6. Guarda los links ya enviados en `seen_urls.json` para no repetir noticias
+4. Envía el informe (solo noticias) a tu chat de Telegram.
+5. Guarda los links ya enviados en `seen_urls.json` para no repetir noticias
    al día siguiente.
 
-**Sobre los eventos municipales**: se muestran los últimos publicados en la
-agenda cultural oficial, con su fecha de *publicación* — el sitio no expone
-de forma confiable la fecha en la que ocurre cada evento (esa parte del
-calendario se carga por JavaScript), así que no se puede filtrar
-estrictamente "todavía no pasó".
+Los eventos de la Agenda Cultural del Municipio **no** están en este
+informe — viven aparte, en el comando `/eventos` del bot (ver abajo), para
+no mezclarlos con las noticias.
 
 Además, un Cloudflare Worker recibe por **webhook** (no polling) los mensajes
 que le mandes al bot y responde a comandos (ver "Comandos del bot" más
@@ -99,7 +95,10 @@ Le podés escribir directamente a tu bot en Telegram:
   espera a las 7 AM). Tarda ~30-60s, porque dispara el pipeline completo en
   GitHub Actions.
 - `/eventos` — últimos eventos publicados en la Agenda Cultural del
-  Municipio. Respuesta casi instantánea.
+  Municipio (agendaculturalsmt.com). Respuesta casi instantánea. Muestra la
+  fecha de *publicación* en la agenda, no la fecha en que ocurre el evento
+  — ese sitio no expone esa fecha de forma confiable (el calendario se
+  carga por JavaScript).
 - `/keywords` — lista las palabras clave, exclusiones y medios activos.
   Respuesta casi instantánea.
 - `/agregar <palabra>` — suma una palabra clave a `keywords.yaml` (commitea
