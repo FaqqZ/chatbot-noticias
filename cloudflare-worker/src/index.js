@@ -29,6 +29,7 @@ const HELP_TEXT =
   "/quitar <palabra> — sacar una palabra clave\n" +
   "/agendar <texto> — anotar algo en tu agenda personal (texto libre)\n" +
   "/miagenda — ver lo que anotaste en tu agenda personal\n" +
+  "/desagendar <id> — sacar un ítem de tu agenda personal (el #id sale de /miagenda)\n" +
   "/limpiar — limpiar el caché de noticias vistas (el próximo /informe trae todo de nuevo, incluso lo ya mostrado)\n" +
   "/ayuda — ver esta ayuda";
 
@@ -216,6 +217,26 @@ async function handleAddAgendaItem(env, text) {
   return `Agregado a tu agenda (#${nextId}).`;
 }
 
+async function handleRemoveAgendaItem(env, idArg) {
+  const id = Number.parseInt(idArg, 10);
+  if (!Number.isInteger(id)) return `"${idArg}" no es un número de ítem válido. Usá /miagenda para ver los #id.`;
+
+  const existing = await getFileOptional("agenda.json", env.GITHUB_TOKEN);
+  const items = existing ? JSON.parse(existing.content) : [];
+  const index = items.findIndex((it) => it.id === id);
+  if (index === -1) return `No encontré el ítem #${id} en tu agenda. Usá /miagenda para ver los que hay.`;
+
+  const [removed] = items.splice(index, 1);
+  await putFile(
+    "agenda.json",
+    JSON.stringify(items, null, 2) + "\n",
+    existing.sha,
+    `Bot: quitar ítem de agenda #${id}`,
+    env.GITHUB_TOKEN
+  );
+  return `Saqué de tu agenda (#${id}): "${removed.text}"`;
+}
+
 async function handleListAgenda(env) {
   const existing = await getFileOptional("agenda.json", env.GITHUB_TOKEN);
   const items = existing ? JSON.parse(existing.content) : [];
@@ -378,6 +399,9 @@ async function handleTelegramWebhook(request, env) {
         break;
       case "/miagenda":
         await replyTelegram(env, chatId, await handleListAgenda(env), true);
+        break;
+      case "/desagendar":
+        await replyTelegram(env, chatId, arg ? await handleRemoveAgendaItem(env, arg) : "Uso: /desagendar <id>");
         break;
       case "/limpiar":
         await replyTelegram(env, chatId, await handleClearCache(env));
