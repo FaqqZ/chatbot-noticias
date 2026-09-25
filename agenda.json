@@ -1,13 +1,5 @@
 [
   {
-    "id": 1,
-    "text": "Evento en El Palacio de los Deportes a las 15:40hs",
-    "created_at": "2026-09-25",
-    "event_date": "2026-09-25",
-    "event_time": "15:40",
-    "notified_hours_before": true
-  },
-  {
     "id": 2,
     "text": "Evento a las 18:00 en hipodromo",
     "created_at": "2026-09-25",
