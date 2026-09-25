@@ -1,1 +1,8 @@
-[]
+[
+  {
+    "id": 1,
+    "text": "Reunión con el licenciado García, el viernes a las cuatro de la tarde. Bueno, el viernes, 25 de septiembre a las 16 horas.",
+    "created_at": "2026-09-25",
+    "event_time": "16:00"
+  }
+]
