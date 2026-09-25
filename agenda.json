@@ -1,1 +1,9 @@
-[]
+[
+  {
+    "id": 1,
+    "text": "/agendar Reunión con DiTec, Lic. Férnandez a las 18:00hs el 30/09/2026",
+    "created_at": "2026-09-25",
+    "event_date": "2026-09-30",
+    "event_time": "18:00"
+  }
+]
