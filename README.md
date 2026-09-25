@@ -119,10 +119,15 @@ Le podés escribir directamente a tu bot en Telegram:
   `agenda.json` vía la API de GitHub. Respuesta casi instantánea. Por ahora
   no se incluyen en el informe periódico.
 
-  Si el texto trae `el DD/MM/AAAA` y/o `a las HH:MMhs` (en cualquier orden;
-  también funciona `a la` y hora sin minutos, ej. `a las 9hs`), el bot
-  detecta esa fecha/hora y la usa para ordenar `/miagenda`. Si no matchea
-  ese patrón, igual se guarda el texto tal cual, sin fecha estructurada.
+  Si el texto trae una fecha y/o una hora, el bot las detecta y las usa para
+  ordenar `/miagenda`. Reconoce tanto el formato escrito (`el DD/MM/AAAA`,
+  ej. `el 30/09/2026`) como el formato hablado que devuelve la transcripción
+  de audio (`el DD de <mes> [de AAAA]`, ej. `el 30 de septiembre de 2026` —
+  si no decís el año, asume el año que viene si esa fecha ya pasó este año).
+  Para la hora reconoce `a las HH:MMhs` o `a las HH horas` (en cualquier
+  orden respecto de la fecha; también funciona `a la` y hora sin minutos,
+  ej. `a las 9hs`). Si no matchea ningún patrón, igual se guarda el texto
+  tal cual, sin fecha estructurada.
 - `/miagenda` — lista lo que cargaste con `/agendar`, ordenado por fecha más
   próxima primero (los que no tienen fecha detectada van aparte, al final,
   con su fecha de carga). Cada ítem muestra su `#id`. Respuesta casi

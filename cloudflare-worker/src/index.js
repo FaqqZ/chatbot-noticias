@@ -207,23 +207,69 @@ async function handleClearCache(env) {
 // y hora para poder ordenar /miagenda por proximidad — el texto original no
 // se toca.
 
+// Whisper transcribe números como dígitos pero meses como palabras (ej.
+// "el 30 de septiembre de 2026", nunca "30/09/2026"), así que hace falta
+// reconocer las fechas dictadas en palabras además del formato con barras
+// que se usa al tipear.
+const SPANISH_MONTHS = {
+  enero: "01",
+  febrero: "02",
+  marzo: "03",
+  abril: "04",
+  mayo: "05",
+  junio: "06",
+  julio: "07",
+  agosto: "08",
+  septiembre: "09",
+  setiembre: "09",
+  octubre: "10",
+  noviembre: "11",
+  diciembre: "12",
+};
+
+function parseSlashDate(text) {
+  const m = text.match(/\bel\s+(\d{1,2})\/(\d{1,2})\/(\d{2,4})\b/i);
+  if (!m) return null;
+  const [, d, mo, yRaw] = m;
+  const y = yRaw.length === 2 ? `20${yRaw}` : yRaw.padStart(4, "0");
+  return `${y}-${mo.padStart(2, "0")}-${d.padStart(2, "0")}`;
+}
+
+function parseSpokenDate(text) {
+  const monthNames = Object.keys(SPANISH_MONTHS).join("|");
+  const re = new RegExp(`\\bel\\s+(\\d{1,2})\\s+de\\s+(${monthNames})(?:\\s+del?\\s+(\\d{4}))?\\b`, "i");
+  const m = text.match(re);
+  if (!m) return null;
+
+  const [, d, monthName, yRaw] = m;
+  const mo = SPANISH_MONTHS[monthName.toLowerCase()];
+  const dPad = d.padStart(2, "0");
+
+  if (yRaw) return `${yRaw}-${mo}-${dPad}`;
+
+  // Sin año explícito ("el 30 de septiembre"): asumimos este año, salvo que
+  // esa fecha ya haya pasado, en cuyo caso asumimos el año que viene (nadie
+  // dicta una fecha de una reunión pasada).
+  const now = new Date();
+  const currentYear = now.getUTCFullYear();
+  let candidate = `${currentYear}-${mo}-${dPad}`;
+  const oneDayMs = 24 * 60 * 60 * 1000;
+  if (new Date(`${candidate}T00:00:00Z`).getTime() < now.getTime() - oneDayMs) {
+    candidate = `${currentYear + 1}-${mo}-${dPad}`;
+  }
+  return candidate;
+}
+
+function parseTime(text) {
+  const m = text.match(/\ba\s+las?\s+(\d{1,2})(?::(\d{2}))?\s*h?s?\b/i);
+  if (!m) return null;
+  const [, h, min] = m;
+  return `${h.padStart(2, "0")}:${(min || "00").padStart(2, "0")}`;
+}
+
 function parseAgendaDateTime(text) {
-  let date = null;
-  let time = null;
-
-  const dateMatch = text.match(/\bel\s+(\d{1,2})\/(\d{1,2})\/(\d{2,4})\b/i);
-  if (dateMatch) {
-    const [, d, m, yRaw] = dateMatch;
-    const y = yRaw.length === 2 ? `20${yRaw}` : yRaw.padStart(4, "0");
-    date = `${y}-${m.padStart(2, "0")}-${d.padStart(2, "0")}`;
-  }
-
-  const timeMatch = text.match(/\ba\s+las?\s+(\d{1,2})(?::(\d{2}))?\s*h?s?\b/i);
-  if (timeMatch) {
-    const [, h, min] = timeMatch;
-    time = `${h.padStart(2, "0")}:${(min || "00").padStart(2, "0")}`;
-  }
-
+  const date = parseSlashDate(text) || parseSpokenDate(text);
+  const time = parseTime(text);
   return { date, time };
 }
 
