@@ -120,10 +120,15 @@ Le podés escribir directamente a tu bot en Telegram:
   no se incluyen en el informe periódico.
 
   Si el texto trae una fecha y/o una hora, el bot las detecta y las usa para
-  ordenar `/miagenda`. Reconoce tanto el formato escrito (`el DD/MM/AAAA`,
-  ej. `el 30/09/2026`) como el formato hablado que devuelve la transcripción
-  de audio (`el DD de <mes> [de AAAA]`, ej. `el 30 de septiembre de 2026` —
-  si no decís el año, asume el año que viene si esa fecha ya pasó este año).
+  ordenar `/miagenda`. Reconoce:
+  - Formato escrito: `el DD/MM/AAAA` (ej. `el 30/09/2026`).
+  - Formato hablado (el que devuelve la transcripción de audio): `el DD de
+    <mes> [de AAAA]` (ej. `el 30 de septiembre de 2026` — si no decís el
+    año, asume el año que viene si esa fecha ya pasó este año).
+  - Relativos: `hoy`, `mañana`, `pasado mañana`. "mañana" en el sentido de
+    "AM" (ej. "a las 9 **de la mañana**") no cuenta como "día siguiente" —
+    el bot distingue ese caso.
+
   Para la hora reconoce `a las HH:MMhs` o `a las HH horas` (en cualquier
   orden respecto de la fecha; también funciona `a la` y hora sin minutos,
   ej. `a las 9hs`). Si no matchea ningún patrón, igual se guarda el texto

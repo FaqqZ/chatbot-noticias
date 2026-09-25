@@ -263,6 +263,26 @@ function parseSpokenDate(text) {
   return candidate;
 }
 
+// "hoy" / "mañana" / "pasado mañana", relativos a la fecha actual en
+// Argentina (usa nowInArgentina(), definida más abajo junto a los
+// recordatorios). Ojo: "mañana" también significa "AM" en español ("a las
+// 9 de la mañana"), así que se excluye ese uso para no interpretar mal una
+// hora como si fuera "el día siguiente".
+function parseRelativeDate(text) {
+  const nowArg = nowInArgentina();
+  const addDays = (n) => {
+    const d = new Date(nowArg);
+    d.setUTCDate(d.getUTCDate() + n);
+    return d.toISOString().slice(0, 10);
+  };
+
+  if (/\bhoy\b/i.test(text)) return addDays(0);
+  if (/\bpasado\s+ma[nñ]ana\b/i.test(text)) return addDays(2);
+  if (/(?<!de\s)(?<!de\sla\s)\bma[nñ]ana\b/i.test(text)) return addDays(1);
+
+  return null;
+}
+
 function parseTime(text) {
   const m = text.match(/\ba\s+las?\s+(\d{1,2})(?::(\d{2}))?\s*h?s?\b/i);
   if (!m) return null;
@@ -271,7 +291,7 @@ function parseTime(text) {
 }
 
 function parseAgendaDateTime(text) {
-  const date = parseSlashDate(text) || parseSpokenDate(text);
+  const date = parseSlashDate(text) || parseSpokenDate(text) || parseRelativeDate(text);
   const time = parseTime(text);
   return { date, time };
 }
