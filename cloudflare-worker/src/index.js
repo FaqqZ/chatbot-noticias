@@ -3,7 +3,9 @@
  *
  * 1. `scheduled()`: dispara el informe diario (workflow_dispatch en GitHub)
  *    a horario exacto, porque el `schedule` propio de GitHub Actions no es
- *    confiable.
+ *    confiable. En el mismo tick (cada 2hs) también chequea `agenda.json`
+ *    y manda recordatorios automáticos para los ítems con fecha detectada
+ *    (el día anterior y un par de horas antes, ver checkAgendaReminders).
  * 2. `fetch()` en POST /telegram-webhook: recibe los mensajes del bot de
  *    Telegram en tiempo real (webhook, no polling) y resuelve los comandos
  *    simples (/keywords, /eventos, /agregar, /quitar, /agendar, /miagenda,
@@ -35,6 +37,7 @@ const HELP_TEXT =
   "/miagenda — ver lo que anotaste en tu agenda personal\n" +
   "/desagendar <id> — sacar un ítem de tu agenda personal (el #id sale de /miagenda)\n" +
   "🎙 mandá un audio — se transcribe y se carga directo en tu agenda, como /agendar\n" +
+  "⏰ si un ítem tiene fecha, te avisa solo el día anterior y un par de horas antes\n" +
   "/limpiar — limpiar el caché de noticias vistas (el próximo /informe trae todo de nuevo, incluso lo ya mostrado)\n" +
   "/ayuda — ver esta ayuda";
 
@@ -347,6 +350,89 @@ async function handleListAgenda(env) {
   return lines.join("\n");
 }
 
+// ---------- Recordatorios de agenda ----------
+// Se chequean en el mismo Cron Trigger que dispara el informe (cada 2hs),
+// sin infraestructura nueva. Argentina no tiene horario de verano, así que
+// el offset UTC-3 es fijo: no hace falta una librería de timezones, alcanza
+// con correr la aritmética a mano.
+
+const ARGENTINA_OFFSET_MS = -3 * 60 * 60 * 1000;
+
+function nowInArgentina() {
+  return new Date(Date.now() + ARGENTINA_OFFSET_MS);
+}
+
+async function checkAgendaReminders(env) {
+  const existing = await getFileOptional("agenda.json", env.GITHUB_TOKEN);
+  if (!existing) return;
+  const items = JSON.parse(existing.content);
+  if (items.length === 0) return;
+
+  const nowArg = nowInArgentina();
+  const todayStr = nowArg.toISOString().slice(0, 10);
+  const tomorrow = new Date(nowArg);
+  tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
+  const tomorrowStr = tomorrow.toISOString().slice(0, 10);
+  const argHour = nowArg.getUTCHours();
+
+  const dayBeforeDue = [];
+  const hoursBeforeDue = [];
+  let changed = false;
+
+  for (const it of items) {
+    if (!it.event_date || it.event_date < todayStr) continue;
+
+    // Resumen del día siguiente: una vez, en la ventana matutina (7-11 ART).
+    if (!it.notified_day_before && it.event_date === tomorrowStr && argHour >= 7 && argHour <= 11) {
+      dayBeforeDue.push(it);
+      it.notified_day_before = true;
+      changed = true;
+    }
+
+    // Recordatorio cercano: una vez, quedando entre 1 y 3hs para el evento
+    // (ventana del ancho del propio cron, así siempre cae algún tick).
+    if (!it.notified_hours_before && it.event_time) {
+      const eventMs = new Date(`${it.event_date}T${it.event_time}:00-03:00`).getTime();
+      const hoursUntil = (eventMs - Date.now()) / (60 * 60 * 1000);
+      if (hoursUntil >= 1 && hoursUntil <= 3) {
+        hoursBeforeDue.push(it);
+        it.notified_hours_before = true;
+        changed = true;
+      }
+    }
+  }
+
+  if (dayBeforeDue.length === 0 && hoursBeforeDue.length === 0) return;
+
+  for (const chatId of allowedChatIds(env)) {
+    if (dayBeforeDue.length > 0) {
+      const lines = ["<b>📅 Mañana en tu agenda:</b>"];
+      for (const it of dayBeforeDue) {
+        lines.push(`• ${formatAgendaWhen(it.event_date, it.event_time)} — ${escapeHtml(it.text)}`);
+      }
+      await replyTelegram(env, chatId, lines.join("\n"), true);
+    }
+    for (const it of hoursBeforeDue) {
+      await replyTelegram(
+        env,
+        chatId,
+        `<b>⏰ En un par de horas:</b> ${formatAgendaWhen(it.event_date, it.event_time)} — ${escapeHtml(it.text)}`,
+        true
+      );
+    }
+  }
+
+  if (changed) {
+    await putFile(
+      "agenda.json",
+      JSON.stringify(items, null, 2) + "\n",
+      existing.sha,
+      "Bot: marcar recordatorios de agenda enviados",
+      env.GITHUB_TOKEN
+    );
+  }
+}
+
 async function describeConfig(env) {
   const [{ content: keywordsFile }, { content: sourcesFile }] = await Promise.all([
     getFile("keywords.yaml", env.GITHUB_TOKEN),
@@ -564,6 +650,7 @@ export default {
   async scheduled(event, env, ctx) {
     if (event.cron === "0 */2 * * *") {
       ctx.waitUntil(dispatchWorkflow("daily-report.yml", env.GITHUB_TOKEN));
+      ctx.waitUntil(checkAgendaReminders(env));
     }
   },
 

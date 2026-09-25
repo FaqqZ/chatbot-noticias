@@ -146,6 +146,24 @@ Le podés escribir directamente a tu bot en Telegram:
   aunque ya lo hayas visto. Respuesta casi instantánea.
 - `/ayuda` — lista estos comandos.
 
+### Recordatorios automáticos de la agenda
+
+Para los ítems de `/agendar` con fecha detectada, el bot manda avisos
+automáticos sin que hagas nada, usando el mismo Cron Trigger que dispara el
+informe cada 2hs (hora Argentina, sin horario de verano):
+
+- **El día anterior**, en algún momento entre las 7 y las 11 de la mañana:
+  un resumen de lo que tenés agendado para el día siguiente.
+- **Un par de horas antes** del horario del evento (solo si el ítem tiene
+  hora detectada, no solo fecha): un recordatorio puntual de ese ítem.
+
+Cada aviso se manda una sola vez por ítem (queda marcado en `agenda.json`
+con `notified_day_before`/`notified_hours_before`). Como el chequeo corre
+cada 2hs, el margen real del aviso "horas antes" es de hasta ±1h respecto
+al horario exacto — si en algún momento hace falta más precisión, se puede
+agregar un Cron Trigger aparte que corra más seguido solo para este
+chequeo (ver `crons` en `wrangler.toml`).
+
 Solo responde a mensajes de los `chat_id` configurados en el secret
 `TELEGRAM_CHAT_ID` **del Worker** (que admite uno o varios separados por
 coma, ej. tu chat personal + un grupo) — otros chats que le escriban al bot
