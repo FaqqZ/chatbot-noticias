@@ -283,10 +283,18 @@ function parseRelativeDate(text) {
   return null;
 }
 
+// "a las" con "las"/"la" presente: el sufijo horario ("hs"/"h") es
+// opcional, porque "las"/"la" ya alcanza para saber que es una hora.
+// Sin "la"/"las" (Whisper a veces se lo come al transcribir, ej. "a 16
+// horas" en vez de "a las 16 horas"): exige un sufijo horario explícito
+// ("horas"/"hs") para no matchear cualquier "a <número>" suelto.
 function parseTime(text) {
-  const m = text.match(/\ba\s+las?\s+(\d{1,2})(?::(\d{2}))?\s*h?s?\b/i);
+  const m = text.match(
+    /\ba\s+las?\s+(?<h1>\d{1,2})(?::(?<m1>\d{2}))?\s*h?s?\b|\ba\s+(?<h2>\d{1,2})(?::(?<m2>\d{2}))?\s*(?:horas?|hs)\b/i
+  );
   if (!m) return null;
-  const [, h, min] = m;
+  const h = m.groups.h1 ?? m.groups.h2;
+  const min = m.groups.m1 ?? m.groups.m2;
   return `${h.padStart(2, "0")}:${(min || "00").padStart(2, "0")}`;
 }
 
