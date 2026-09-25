@@ -80,6 +80,12 @@ function utf8ToBase64(str) {
   return btoa(binary);
 }
 
+function arrayBufferToBase64(buffer) {
+  let binary = "";
+  new Uint8Array(buffer).forEach((b) => (binary += String.fromCharCode(b)));
+  return btoa(binary);
+}
+
 async function getFile(path, token) {
   const res = await fetch(`${CONTENTS_API}/${path}?ref=${BRANCH}`, {
     headers: {
@@ -603,9 +609,14 @@ function allowedChatIds(env) {
     .filter(Boolean);
 }
 
-// Descarga un mensaje de voz de Telegram y lo transcribe con el modelo
-// Whisper de Cloudflare Workers AI (binding "AI" en wrangler.toml). Devuelve
-// el texto transcripto (puede ser "" si Whisper no reconoció nada).
+// Descarga un mensaje de voz de Telegram y lo transcribe con Whisper
+// large-v3-turbo de Cloudflare Workers AI (binding "AI" en wrangler.toml) —
+// más grande que el "@cf/openai/whisper" base, y admite parámetros para
+// mejorar precisión con audio poco claro: idioma fijo (evita que confunda
+// el idioma), un prompt de contexto (ayuda con nombres propios y evita
+// alucinar texto no dicho) y sin condicionar en texto previo (reduce loops
+// de alucinación en segmentos largos). Devuelve el texto transcripto (puede
+// ser "" si el modelo no reconoció nada).
 async function transcribeVoice(env, fileId) {
   const fileInfoRes = await fetch(
     `https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/getFile?file_id=${fileId}`
@@ -618,8 +629,12 @@ async function transcribeVoice(env, fileId) {
   if (!audioRes.ok) throw new Error(`descarga del audio falló: ${audioRes.status}`);
   const audioBuffer = await audioRes.arrayBuffer();
 
-  const result = await env.AI.run("@cf/openai/whisper", {
-    audio: [...new Uint8Array(audioBuffer)],
+  const result = await env.AI.run("@cf/openai/whisper-large-v3-turbo", {
+    audio: arrayBufferToBase64(audioBuffer),
+    language: "es",
+    initial_prompt:
+      "Nota de agenda personal en español rioplatense (Argentina). Puede incluir nombres y apellidos propios, títulos (Lic., Dr., Crio.), instituciones, y fechas u horarios (ej. hoy, mañana, a las 18 horas, el 30 de septiembre).",
+    condition_on_previous_text: false,
   });
   return (result.text || "").trim();
 }

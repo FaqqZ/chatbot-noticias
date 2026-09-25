@@ -145,13 +145,18 @@ Le podés escribir directamente a tu bot en Telegram:
   instantánea.
 - `/desagendar <id>` — saca un ítem de tu agenda personal (el `#id` sale de
   `/miagenda`). Respuesta casi instantánea.
-- **Mensaje de voz** (sin comando) — se transcribe con el modelo Whisper de
-  Cloudflare Workers AI y se carga directo en la agenda, como si hubieras
-  mandado `/agendar <transcripción>`. El bot te responde con el texto que
-  entendió (para que puedas chequear que la transcripción salió bien) más
-  la confirmación de que se agregó. Tarda un poco más que los comandos de
-  texto porque corre el modelo, pero sigue siendo dentro del mismo Worker
-  (no dispara GitHub Actions).
+- **Mensaje de voz** (sin comando) — se transcribe con
+  `@cf/openai/whisper-large-v3-turbo` de Cloudflare Workers AI (el modelo
+  grande, no el básico) y se carga directo en la agenda, como si hubieras
+  mandado `/agendar <transcripción>`. Se le fija el idioma (español) y se le
+  da un prompt de contexto (que puede traer nombres propios, títulos como
+  "Lic."/"Crio.", fechas y horarios) para mejorar la precisión — probado
+  contra el modelo básico, corrige varios errores de nombres propios que el
+  básico no pescaba. El bot te responde con el texto que entendió (para que
+  puedas chequear que la transcripción salió bien) más la confirmación de
+  que se agregó. Tarda un poco más que los comandos de texto porque corre
+  el modelo, pero sigue siendo dentro del mismo Worker (no dispara GitHub
+  Actions).
 - `/limpiar` — vacía `seen_urls.json` (el caché de noticias ya mostradas).
   El próximo `/informe` vuelve a traer todo lo que matchea tus keywords,
   aunque ya lo hayas visto. Respuesta casi instantánea.
