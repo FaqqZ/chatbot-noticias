@@ -198,6 +198,35 @@ async function handleClearCache(env) {
 // ---------- Agenda personal (agenda.json) ----------
 // Texto libre que el usuario carga con /agendar. Se guarda crudo (sin
 // escapar HTML) y se escapa recién al formatear la respuesta de /miagenda.
+// Si el texto trae "el DD/MM/AAAA" y/o "a las HH:MMhs", se extrae esa fecha
+// y hora para poder ordenar /miagenda por proximidad — el texto original no
+// se toca.
+
+function parseAgendaDateTime(text) {
+  let date = null;
+  let time = null;
+
+  const dateMatch = text.match(/\bel\s+(\d{1,2})\/(\d{1,2})\/(\d{2,4})\b/i);
+  if (dateMatch) {
+    const [, d, m, yRaw] = dateMatch;
+    const y = yRaw.length === 2 ? `20${yRaw}` : yRaw.padStart(4, "0");
+    date = `${y}-${m.padStart(2, "0")}-${d.padStart(2, "0")}`;
+  }
+
+  const timeMatch = text.match(/\ba\s+las?\s+(\d{1,2})(?::(\d{2}))?\s*h?s?\b/i);
+  if (timeMatch) {
+    const [, h, min] = timeMatch;
+    time = `${h.padStart(2, "0")}:${(min || "00").padStart(2, "0")}`;
+  }
+
+  return { date, time };
+}
+
+function formatAgendaWhen(date, time) {
+  const [y, m, d] = date.split("-");
+  const datePart = `${d}/${m}/${y}`;
+  return time ? `${datePart} ${time}hs` : datePart;
+}
 
 async function handleAddAgendaItem(env, text) {
   const existing = await getFileOptional("agenda.json", env.GITHUB_TOKEN);
@@ -205,7 +234,11 @@ async function handleAddAgendaItem(env, text) {
   const sha = existing ? existing.sha : undefined;
 
   const nextId = items.reduce((max, it) => Math.max(max, it.id), 0) + 1;
-  items.push({ id: nextId, text, created_at: new Date().toISOString().slice(0, 10) });
+  const { date: eventDate, time: eventTime } = parseAgendaDateTime(text);
+  const item = { id: nextId, text, created_at: new Date().toISOString().slice(0, 10) };
+  if (eventDate) item.event_date = eventDate;
+  if (eventTime) item.event_time = eventTime;
+  items.push(item);
 
   await putFile(
     "agenda.json",
@@ -214,7 +247,8 @@ async function handleAddAgendaItem(env, text) {
     `Bot: agregar ítem de agenda #${nextId}`,
     env.GITHUB_TOKEN
   );
-  return `Agregado a tu agenda (#${nextId}).`;
+  const when = eventDate ? ` — programado para ${formatAgendaWhen(eventDate, eventTime)}` : "";
+  return `Agregado a tu agenda (#${nextId})${when}.`;
 }
 
 async function handleRemoveAgendaItem(env, idArg) {
@@ -242,9 +276,22 @@ async function handleListAgenda(env) {
   const items = existing ? JSON.parse(existing.content) : [];
   if (items.length === 0) return "Tu agenda está vacía. Usá /agendar <texto> para cargar algo.";
 
+  const withDate = items
+    .filter((it) => it.event_date)
+    .sort((a, b) =>
+      `${a.event_date}T${a.event_time || "00:00"}`.localeCompare(`${b.event_date}T${b.event_time || "00:00"}`)
+    );
+  const withoutDate = items.filter((it) => !it.event_date);
+
   const lines = ["<b>📋 Tu agenda</b>"];
-  for (const it of items) {
-    lines.push(`• #${it.id} (${it.created_at}) ${escapeHtml(it.text)}`);
+  for (const it of withDate) {
+    lines.push(`• #${it.id} 🗓 ${formatAgendaWhen(it.event_date, it.event_time)} — ${escapeHtml(it.text)}`);
+  }
+  if (withoutDate.length > 0) {
+    if (withDate.length > 0) lines.push("", "<b>Sin fecha:</b>");
+    for (const it of withoutDate) {
+      lines.push(`• #${it.id} (${it.created_at}) ${escapeHtml(it.text)}`);
+    }
   }
   return lines.join("\n");
 }

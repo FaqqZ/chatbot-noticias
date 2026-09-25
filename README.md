@@ -114,12 +114,19 @@ Le podés escribir directamente a tu bot en Telegram:
   el cambio automáticamente vía la API de GitHub). Respuesta casi
   instantánea.
 - `/quitar <palabra>` — saca una palabra clave. Ídem.
-- `/agendar <texto>` — anota texto libre en tu agenda personal (ej. "Agenda
-  del Lic. Fernandez y del Crio. Rolando Gomez"), guardado en `agenda.json`
-  vía la API de GitHub. Respuesta casi instantánea. Por ahora no se incluyen
-  en el informe periódico.
-- `/miagenda` — lista todo lo que cargaste con `/agendar`, con fecha de
-  carga y un `#id` para cada ítem. Respuesta casi instantánea.
+- `/agendar <texto>` — anota texto libre en tu agenda personal (ej. "Reunión
+  con DiTec, Lic. Fernandez a las 18:00hs el 30/09/2026"), guardado en
+  `agenda.json` vía la API de GitHub. Respuesta casi instantánea. Por ahora
+  no se incluyen en el informe periódico.
+
+  Si el texto trae `el DD/MM/AAAA` y/o `a las HH:MMhs` (en cualquier orden;
+  también funciona `a la` y hora sin minutos, ej. `a las 9hs`), el bot
+  detecta esa fecha/hora y la usa para ordenar `/miagenda`. Si no matchea
+  ese patrón, igual se guarda el texto tal cual, sin fecha estructurada.
+- `/miagenda` — lista lo que cargaste con `/agendar`, ordenado por fecha más
+  próxima primero (los que no tienen fecha detectada van aparte, al final,
+  con su fecha de carga). Cada ítem muestra su `#id`. Respuesta casi
+  instantánea.
 - `/desagendar <id>` — saca un ítem de tu agenda personal (el `#id` sale de
   `/miagenda`). Respuesta casi instantánea.
 - `/limpiar` — vacía `seen_urls.json` (el caché de noticias ya mostradas).
