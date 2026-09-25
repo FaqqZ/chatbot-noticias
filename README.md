@@ -73,8 +73,9 @@ repository secret**, y agregá:
 
 - `TELEGRAM_BOT_TOKEN`: el token de BotFather.
 - `TELEGRAM_CHAT_ID`: el chat_id obtenido en el paso anterior. Este es el
-  secret que usa GitHub Actions para el informe periódico (`main.py`) — va
-  a tu chat personal, no admite lista.
+  secret que usa GitHub Actions para el informe periódico (`main.py` /
+  `notifier.py`) — admite uno o varios chat_id separados por coma (ej. tu
+  chat personal + un grupo), igual que el del Worker (ver más abajo).
 
 ### 4. Completar tus palabras clave
 
@@ -133,10 +134,11 @@ Worker puede mandar comandos falsos.
 
 Nota: este secret es independiente del `TELEGRAM_CHAT_ID` que usa GitHub
 Actions para el informe periódico (paso 3 del setup) — son dos lugares
-distintos (Worker vs. GitHub Actions) que hoy pueden tener valores
-distintos. Agregar un grupo al secret del Worker solo afecta a los
-comandos interactivos; el informe automático cada 2hs sigue yendo únicamente
-al chat_id de GitHub Actions.
+distintos (Worker vs. GitHub Actions) con su propio valor, aunque ambos
+admiten la misma sintaxis de lista separada por coma. Si agregás un chat
+nuevo (ej. un grupo) y querés que reciba tanto los comandos interactivos
+como el informe automático, hay que actualizar los dos secrets por
+separado, con la misma lista de chat_id en cada uno.
 
 ## Agregar o quitar medios
 

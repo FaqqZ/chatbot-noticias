@@ -12,21 +12,25 @@ MAX_MESSAGE_LENGTH = 4000  # límite de Telegram es 4096, dejamos margen
 
 def send_telegram_message(text: str) -> None:
     token = os.environ["TELEGRAM_BOT_TOKEN"]
-    chat_id = os.environ["TELEGRAM_CHAT_ID"]
+    # TELEGRAM_CHAT_ID admite uno o varios chat_id separados por coma
+    # (ej. tu chat personal + un grupo).
+    chat_ids = [c.strip() for c in os.environ["TELEGRAM_CHAT_ID"].split(",") if c.strip()]
     url = TELEGRAM_API_URL.format(token=token)
 
-    for chunk in _split_message(text):
-        response = requests.post(
-            url,
-            data={
-                "chat_id": chat_id,
-                "text": chunk,
-                "parse_mode": "HTML",
-                "disable_web_page_preview": True,
-            },
-            timeout=15,
-        )
-        response.raise_for_status()
+    chunks = _split_message(text)
+    for chat_id in chat_ids:
+        for chunk in chunks:
+            response = requests.post(
+                url,
+                data={
+                    "chat_id": chat_id,
+                    "text": chunk,
+                    "parse_mode": "HTML",
+                    "disable_web_page_preview": True,
+                },
+                timeout=15,
+            )
+            response.raise_for_status()
 
 
 def _split_message(text: str) -> list[str]:
