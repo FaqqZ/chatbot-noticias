@@ -105,6 +105,12 @@ Le podés escribir directamente a tu bot en Telegram:
   el cambio automáticamente vía la API de GitHub). Respuesta casi
   instantánea.
 - `/quitar <palabra>` — saca una palabra clave. Ídem.
+- `/agendar <texto>` — anota texto libre en tu agenda personal (ej. "Agenda
+  del Lic. Fernandez y del Crio. Rolando Gomez"), guardado en `agenda.json`
+  vía la API de GitHub. Respuesta casi instantánea. Por ahora no hay forma
+  de borrar ítems ni se incluyen en el informe periódico.
+- `/miagenda` — lista todo lo que cargaste con `/agendar`, con fecha de
+  carga. Respuesta casi instantánea.
 - `/limpiar` — vacía `seen_urls.json` (el caché de noticias ya mostradas).
   El próximo `/informe` vuelve a traer todo lo que matchea tus keywords,
   aunque ya lo hayas visto. Respuesta casi instantánea.

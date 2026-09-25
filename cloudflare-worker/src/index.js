@@ -27,6 +27,8 @@ const HELP_TEXT =
   "/keywords — ver palabras clave, exclusiones y medios activos\n" +
   "/agregar <palabra> — sumar una palabra clave a rastrear\n" +
   "/quitar <palabra> — sacar una palabra clave\n" +
+  "/agendar <texto> — anotar algo en tu agenda personal (texto libre)\n" +
+  "/miagenda — ver lo que anotaste en tu agenda personal\n" +
   "/limpiar — limpiar el caché de noticias vistas (el próximo /informe trae todo de nuevo, incluso lo ya mostrado)\n" +
   "/ayuda — ver esta ayuda";
 
@@ -77,6 +79,23 @@ async function getFile(path, token) {
       "User-Agent": "tucuman-news-scheduler-worker",
     },
   });
+  if (!res.ok) throw new Error(`GET ${path} falló: ${res.status}`);
+  const data = await res.json();
+  return { content: base64ToUtf8(data.content), sha: data.sha };
+}
+
+// Como getFile pero devuelve null en vez de lanzar cuando el archivo
+// todavía no existe (para archivos que el bot crea recién en el primer uso,
+// como agenda.json).
+async function getFileOptional(path, token) {
+  const res = await fetch(`${CONTENTS_API}/${path}?ref=${BRANCH}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      Accept: "application/vnd.github+json",
+      "User-Agent": "tucuman-news-scheduler-worker",
+    },
+  });
+  if (res.status === 404) return null;
   if (!res.ok) throw new Error(`GET ${path} falló: ${res.status}`);
   const data = await res.json();
   return { content: base64ToUtf8(data.content), sha: data.sha };
@@ -175,6 +194,40 @@ async function handleClearCache(env) {
   return "Listo, limpié el caché. El próximo /informe va a traer todo de nuevo (incluso lo que ya te mostré antes).";
 }
 
+// ---------- Agenda personal (agenda.json) ----------
+// Texto libre que el usuario carga con /agendar. Se guarda crudo (sin
+// escapar HTML) y se escapa recién al formatear la respuesta de /miagenda.
+
+async function handleAddAgendaItem(env, text) {
+  const existing = await getFileOptional("agenda.json", env.GITHUB_TOKEN);
+  const items = existing ? JSON.parse(existing.content) : [];
+  const sha = existing ? existing.sha : undefined;
+
+  const nextId = items.reduce((max, it) => Math.max(max, it.id), 0) + 1;
+  items.push({ id: nextId, text, created_at: new Date().toISOString().slice(0, 10) });
+
+  await putFile(
+    "agenda.json",
+    JSON.stringify(items, null, 2) + "\n",
+    sha,
+    `Bot: agregar ítem de agenda #${nextId}`,
+    env.GITHUB_TOKEN
+  );
+  return `Agregado a tu agenda (#${nextId}).`;
+}
+
+async function handleListAgenda(env) {
+  const existing = await getFileOptional("agenda.json", env.GITHUB_TOKEN);
+  const items = existing ? JSON.parse(existing.content) : [];
+  if (items.length === 0) return "Tu agenda está vacía. Usá /agendar <texto> para cargar algo.";
+
+  const lines = ["<b>📋 Tu agenda</b>"];
+  for (const it of items) {
+    lines.push(`• #${it.id} (${it.created_at}) ${escapeHtml(it.text)}`);
+  }
+  return lines.join("\n");
+}
+
 async function describeConfig(env) {
   const [{ content: keywordsFile }, { content: sourcesFile }] = await Promise.all([
     getFile("keywords.yaml", env.GITHUB_TOKEN),
@@ -218,6 +271,10 @@ function decodeEntities(text) {
 function stripHtml(rawHtml) {
   const withoutTags = rawHtml.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
   return decodeEntities(withoutTags);
+}
+
+function escapeHtml(text) {
+  return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
 async function fetchMunicipalEvents(limit = MAX_EVENTS) {
@@ -305,6 +362,12 @@ async function handleTelegramWebhook(request, env) {
         break;
       case "/quitar":
         await replyTelegram(env, arg ? await handleRemoveKeyword(env, arg) : "Uso: /quitar <palabra clave>");
+        break;
+      case "/agendar":
+        await replyTelegram(env, arg ? await handleAddAgendaItem(env, arg) : "Uso: /agendar <texto>");
+        break;
+      case "/miagenda":
+        await replyTelegram(env, await handleListAgenda(env), true);
         break;
       case "/limpiar":
         await replyTelegram(env, await handleClearCache(env));

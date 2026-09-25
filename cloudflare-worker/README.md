@@ -10,10 +10,11 @@ Este Worker hace dos cosas:
 2. **Recibe los comandos del bot de Telegram por webhook**, no por polling.
    Telegram le pega directo al Worker apenas mandás un mensaje — nada de
    esperar a que un cron revise cada tanto. `/keywords`, `/agregar`,
-   `/quitar` y `/ayuda` se resuelven ahí mismo (leyendo/escribiendo
-   `keywords.yaml` vía la API de contenidos de GitHub), así que responden
-   casi al instante. Solo `/informe` dispara GitHub Actions (tarda ~30-60s,
-   porque corre el pipeline de Python que trae y rankea noticias).
+   `/quitar`, `/agendar`, `/miagenda` y `/ayuda` se resuelven ahí mismo
+   (leyendo/escribiendo `keywords.yaml` o `agenda.json` vía la API de
+   contenidos de GitHub), así que responden casi al instante. Solo
+   `/informe` dispara GitHub Actions (tarda ~30-60s, porque corre el
+   pipeline de Python que trae y rankea noticias).
 
 Es gratis: el plan free de Cloudflare Workers incluye Cron Triggers y
 volumen de pedidos muy por encima de lo que este uso necesita.
@@ -43,7 +44,7 @@ workflows en tu repo:
    token**.
 2. **Repository access**: solo `FaqqZ/chatbot-noticias`.
 3. **Permissions** → **Actions**: `Read and write`. **Contents**: `Read and
-   write` (para poder editar `keywords.yaml`).
+   write` (para poder editar `keywords.yaml` y `agenda.json`).
 4. Generá el token y copialo (empieza con `github_pat_...`).
 
 ### 4. Cargar los secrets del Worker
