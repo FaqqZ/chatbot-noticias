@@ -128,11 +128,17 @@ Le podés escribir directamente a tu bot en Telegram:
   - Relativos: `hoy`, `mañana`, `pasado mañana`. "mañana" en el sentido de
     "AM" (ej. "a las 9 **de la mañana**") no cuenta como "día siguiente" —
     el bot distingue ese caso.
+  - **Sin fecha, solo hora** (ej. "a las 15:40hs", sin decir ningún día):
+    asume hoy, salvo que esa hora ya haya pasado hoy, en cuyo caso asume
+    mañana.
 
   Para la hora reconoce `a las HH:MMhs` o `a las HH horas` (en cualquier
   orden respecto de la fecha; también funciona `a la` y hora sin minutos,
-  ej. `a las 9hs`). Si no matchea ningún patrón, igual se guarda el texto
-  tal cual, sin fecha estructurada.
+  ej. `a las 9hs`). También reconoce la hora sin la palabra "la"/"las" (ej.
+  "a 16 horas", que es como a veces sale la transcripción de audio), pero
+  en ese caso exige un sufijo horario explícito ("horas" o "hs") para no
+  confundir cualquier "a &lt;número&gt;" suelto con una hora. Si no matchea
+  ningún patrón, igual se guarda el texto tal cual, sin fecha estructurada.
 - `/miagenda` — lista lo que cargaste con `/agendar`, ordenado por fecha más
   próxima primero (los que no tienen fecha detectada van aparte, al final,
   con su fecha de carga). Cada ítem muestra su `#id`. Respuesta casi

@@ -299,8 +299,25 @@ function parseTime(text) {
 }
 
 function parseAgendaDateTime(text) {
-  const date = parseSlashDate(text) || parseSpokenDate(text) || parseRelativeDate(text);
   const time = parseTime(text);
+  let date = parseSlashDate(text) || parseSpokenDate(text) || parseRelativeDate(text);
+
+  // Dijo hora pero no fecha ("a las 15:40hs", sin "hoy" ni nada): asumimos
+  // hoy, salvo que esa hora ya haya pasado hoy, en cuyo caso asumimos
+  // mañana — mismo criterio que parseSpokenDate para años implícitos.
+  if (!date && time) {
+    const nowArg = nowInArgentina();
+    const todayStr = nowArg.toISOString().slice(0, 10);
+    const candidateMs = new Date(`${todayStr}T${time}:00-03:00`).getTime();
+    if (candidateMs >= Date.now()) {
+      date = todayStr;
+    } else {
+      const tomorrow = new Date(nowArg);
+      tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
+      date = tomorrow.toISOString().slice(0, 10);
+    }
+  }
+
   return { date, time };
 }
 
