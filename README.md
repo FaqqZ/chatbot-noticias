@@ -161,13 +161,18 @@ informe cada 2hs (hora Argentina, sin horario de verano):
   un resumen de lo que tenés agendado para el día siguiente.
 - **Un par de horas antes** del horario del evento (solo si el ítem tiene
   hora detectada, no solo fecha): un recordatorio puntual de ese ítem.
+  Si cuando lo cargás con `/agendar` (o por audio) ya faltan menos de 3hs
+  para el evento, este aviso se manda **al toque**, en el momento de
+  cargarlo — no espera al próximo tick del cron. Si falta más de 3hs, sí
+  espera al cron.
 
 Cada aviso se manda una sola vez por ítem (queda marcado en `agenda.json`
-con `notified_day_before`/`notified_hours_before`). Como el chequeo corre
-cada 2hs, el margen real del aviso "horas antes" es de hasta ±1h respecto
-al horario exacto — si en algún momento hace falta más precisión, se puede
-agregar un Cron Trigger aparte que corra más seguido solo para este
-chequeo (ver `crons` en `wrangler.toml`).
+con `notified_day_before`/`notified_hours_before`). Fuera del caso de "ya
+faltan menos de 3hs" (que se manda al instante), el chequeo periódico corre
+cada 2hs, así que el margen real es de hasta ±1h respecto al horario
+exacto — si en algún momento hace falta más precisión, se puede agregar un
+Cron Trigger aparte que corra más seguido solo para este chequeo (ver
+`crons` en `wrangler.toml`).
 
 Solo responde a mensajes de los `chat_id` configurados en el secret
 `TELEGRAM_CHAT_ID` **del Worker** (que admite uno o varios separados por

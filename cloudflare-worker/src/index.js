@@ -312,6 +312,14 @@ async function handleAddAgendaItem(env, text) {
   const item = { id: nextId, text, created_at: new Date().toISOString().slice(0, 10) };
   if (eventDate) item.event_date = eventDate;
   if (eventTime) item.event_time = eventTime;
+
+  // Si ya está a menos de 3hs del evento en el momento de cargarlo, no tiene
+  // sentido esperar al próximo tick del cron (hasta 2hs) — se manda el
+  // recordatorio "horas antes" de una, y se marca como ya notificado para
+  // que el chequeo periódico no lo repita.
+  const dueNow = isHoursBeforeDue(item);
+  if (dueNow) item.notified_hours_before = true;
+
   items.push(item);
 
   await putFile(
@@ -321,6 +329,9 @@ async function handleAddAgendaItem(env, text) {
     `Bot: agregar ítem de agenda #${nextId}`,
     env.GITHUB_TOKEN
   );
+
+  if (dueNow) await broadcastToAllChats(env, formatHoursBeforeMessage(item));
+
   const when = eventDate ? ` — programado para ${formatAgendaWhen(eventDate, eventTime)}` : "";
   return `Agregado a tu agenda (#${nextId})${when}.`;
 }
@@ -382,6 +393,27 @@ function nowInArgentina() {
   return new Date(Date.now() + ARGENTINA_OFFSET_MS);
 }
 
+// "Un par de horas antes": due en cualquier momento entre ahora mismo y 3hs
+// antes del evento. Sin piso además de "todavía no pasó" a propósito — así
+// también sirve para el chequeo inmediato al cargar un ítem (ver
+// handleAddAgendaItem), no solo para el cron cada 2hs.
+function isHoursBeforeDue(item) {
+  if (!item.event_date || !item.event_time || item.notified_hours_before) return false;
+  const eventMs = new Date(`${item.event_date}T${item.event_time}:00-03:00`).getTime();
+  const hoursUntil = (eventMs - Date.now()) / (60 * 60 * 1000);
+  return hoursUntil > 0 && hoursUntil <= 3;
+}
+
+function formatHoursBeforeMessage(item) {
+  return `<b>⏰ En un par de horas:</b> ${formatAgendaWhen(item.event_date, item.event_time)} — ${escapeHtml(item.text)}`;
+}
+
+async function broadcastToAllChats(env, text) {
+  for (const chatId of allowedChatIds(env)) {
+    await replyTelegram(env, chatId, text, true);
+  }
+}
+
 async function checkAgendaReminders(env) {
   const existing = await getFileOptional("agenda.json", env.GITHUB_TOKEN);
   if (!existing) return;
@@ -409,16 +441,10 @@ async function checkAgendaReminders(env) {
       changed = true;
     }
 
-    // Recordatorio cercano: una vez, quedando entre 1 y 3hs para el evento
-    // (ventana del ancho del propio cron, así siempre cae algún tick).
-    if (!it.notified_hours_before && it.event_time) {
-      const eventMs = new Date(`${it.event_date}T${it.event_time}:00-03:00`).getTime();
-      const hoursUntil = (eventMs - Date.now()) / (60 * 60 * 1000);
-      if (hoursUntil >= 1 && hoursUntil <= 3) {
-        hoursBeforeDue.push(it);
-        it.notified_hours_before = true;
-        changed = true;
-      }
+    if (isHoursBeforeDue(it)) {
+      hoursBeforeDue.push(it);
+      it.notified_hours_before = true;
+      changed = true;
     }
   }
 
@@ -433,12 +459,7 @@ async function checkAgendaReminders(env) {
       await replyTelegram(env, chatId, lines.join("\n"), true);
     }
     for (const it of hoursBeforeDue) {
-      await replyTelegram(
-        env,
-        chatId,
-        `<b>⏰ En un par de horas:</b> ${formatAgendaWhen(it.event_date, it.event_time)} — ${escapeHtml(it.text)}`,
-        true
-      );
+      await replyTelegram(env, chatId, formatHoursBeforeMessage(it), true);
     }
   }
 
