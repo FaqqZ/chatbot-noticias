@@ -1,10 +1,1 @@
-[
-  {
-    "id": 2,
-    "text": "Evento a las 18:00 en hipodromo",
-    "created_at": "2026-09-25",
-    "event_date": "2026-09-25",
-    "event_time": "18:00",
-    "notified_hours_before": true
-  }
-]
+[]
