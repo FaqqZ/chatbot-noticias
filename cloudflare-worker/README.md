@@ -61,6 +61,13 @@ repo. `WEBHOOK_SECRET` es un valor random que vos inventás (por ejemplo con
 `openssl rand -hex 24`); sirve para que Telegram demuestre que el mensaje es
 realmente suyo.
 
+`TELEGRAM_CHAT_ID` acepta uno o varios chat_id separados por coma (ej.
+`123456789,-1009876543210`) si querés que el bot responda tanto en tu chat
+personal como en un grupo. Para actualizarlo más adelante (agregar un
+grupo, por ejemplo) simplemente volvé a correr `npx wrangler secret put
+TELEGRAM_CHAT_ID` con el nuevo valor completo — no hace falta redeploy
+aparte, el secret se aplica al toque.
+
 ### 5. Deploy
 
 ```bash

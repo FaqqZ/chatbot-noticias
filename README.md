@@ -50,6 +50,12 @@ hace un Cloudflare Worker — ver
    `<TOKEN>`):
    `https://api.telegram.org/bot<TOKEN>/getUpdates`
    y buscá el campo `"chat":{"id": ...}` en la respuesta JSON.
+6. (Opcional) Para que el bot también responda en un **grupo**: agregalo al
+   grupo, mandale ahí cualquier comando (ej. `/ayuda`) y repetí la consulta
+   a `getUpdates` — el `chat_id` de un grupo es un número negativo. Vas a
+   necesitar ese id para el secret `TELEGRAM_CHAT_ID` del Worker (ver "Cargar
+   los secrets del Worker" en [`cloudflare-worker/README.md`](cloudflare-worker/README.md)),
+   que acepta varios chat_id separados por coma.
 
 ### 2. Subir el repo a GitHub
 
@@ -66,7 +72,9 @@ En el repo de GitHub: **Settings → Secrets and variables → Actions → New
 repository secret**, y agregá:
 
 - `TELEGRAM_BOT_TOKEN`: el token de BotFather.
-- `TELEGRAM_CHAT_ID`: el chat_id obtenido en el paso anterior.
+- `TELEGRAM_CHAT_ID`: el chat_id obtenido en el paso anterior. Este es el
+  secret que usa GitHub Actions para el informe periódico (`main.py`) — va
+  a tu chat personal, no admite lista.
 
 ### 4. Completar tus palabras clave
 
@@ -116,10 +124,19 @@ Le podés escribir directamente a tu bot en Telegram:
   aunque ya lo hayas visto. Respuesta casi instantánea.
 - `/ayuda` — lista estos comandos.
 
-Solo responde a mensajes del `chat_id` configurado en los secrets del
-Worker — otros usuarios que le escriban al bot son ignorados. Además valida
-un token secreto propio del webhook (`WEBHOOK_SECRET`), así que ni siquiera
-alguien que adivine la URL del Worker puede mandar comandos falsos.
+Solo responde a mensajes de los `chat_id` configurados en el secret
+`TELEGRAM_CHAT_ID` **del Worker** (que admite uno o varios separados por
+coma, ej. tu chat personal + un grupo) — otros chats que le escriban al bot
+son ignorados. Además valida un token secreto propio del webhook
+(`WEBHOOK_SECRET`), así que ni siquiera alguien que adivine la URL del
+Worker puede mandar comandos falsos.
+
+Nota: este secret es independiente del `TELEGRAM_CHAT_ID` que usa GitHub
+Actions para el informe periódico (paso 3 del setup) — son dos lugares
+distintos (Worker vs. GitHub Actions) que hoy pueden tener valores
+distintos. Agregar un grupo al secret del Worker solo afecta a los
+comandos interactivos; el informe automático cada 2hs sigue yendo únicamente
+al chat_id de GitHub Actions.
 
 ## Agregar o quitar medios
 

@@ -314,12 +314,22 @@ function formatEventsReply(events) {
 
 // ---------- Telegram ----------
 
-async function replyTelegram(env, text, html = false) {
+async function replyTelegram(env, chatId, text, html = false) {
   const url = `https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/sendMessage`;
-  const body = new URLSearchParams({ chat_id: env.TELEGRAM_CHAT_ID, text });
+  const body = new URLSearchParams({ chat_id: chatId, text });
   if (html) body.set("parse_mode", "HTML");
   const res = await fetch(url, { method: "POST", body });
   if (!res.ok) throw new Error(`sendMessage falló: ${res.status} ${await res.text()}`);
+}
+
+// TELEGRAM_CHAT_ID acepta uno o varios chat_id separados por coma (ej. tu
+// chat personal + el de un grupo), para poder usar el bot desde más de un
+// chat sin abrirlo a cualquiera.
+function allowedChatIds(env) {
+  return String(env.TELEGRAM_CHAT_ID)
+    .split(",")
+    .map((id) => id.trim())
+    .filter(Boolean);
 }
 
 async function handleTelegramWebhook(request, env) {
@@ -334,7 +344,7 @@ async function handleTelegramWebhook(request, env) {
 
   const chatId = String(message.chat.id);
   console.log(`mensaje de chat_id=${chatId} tipo=${message.chat.type} texto=${JSON.stringify(message.text)}`);
-  if (chatId !== String(env.TELEGRAM_CHAT_ID)) return new Response("ignored");
+  if (!allowedChatIds(env).includes(chatId)) return new Response("ignored");
 
   const text = message.text.trim();
   if (!text.startsWith("/")) return new Response("ok");
@@ -349,38 +359,38 @@ async function handleTelegramWebhook(request, env) {
       case "/start":
       case "/ayuda":
       case "/help":
-        await replyTelegram(env, HELP_TEXT);
+        await replyTelegram(env, chatId, HELP_TEXT);
         break;
       case "/keywords":
-        await replyTelegram(env, await describeConfig(env), true);
+        await replyTelegram(env, chatId, await describeConfig(env), true);
         break;
       case "/eventos":
-        await replyTelegram(env, formatEventsReply(await fetchMunicipalEvents()), true);
+        await replyTelegram(env, chatId, formatEventsReply(await fetchMunicipalEvents()), true);
         break;
       case "/agregar":
-        await replyTelegram(env, arg ? await handleAddKeyword(env, arg) : "Uso: /agregar <palabra clave>");
+        await replyTelegram(env, chatId, arg ? await handleAddKeyword(env, arg) : "Uso: /agregar <palabra clave>");
         break;
       case "/quitar":
-        await replyTelegram(env, arg ? await handleRemoveKeyword(env, arg) : "Uso: /quitar <palabra clave>");
+        await replyTelegram(env, chatId, arg ? await handleRemoveKeyword(env, arg) : "Uso: /quitar <palabra clave>");
         break;
       case "/agendar":
-        await replyTelegram(env, arg ? await handleAddAgendaItem(env, arg) : "Uso: /agendar <texto>");
+        await replyTelegram(env, chatId, arg ? await handleAddAgendaItem(env, arg) : "Uso: /agendar <texto>");
         break;
       case "/miagenda":
-        await replyTelegram(env, await handleListAgenda(env), true);
+        await replyTelegram(env, chatId, await handleListAgenda(env), true);
         break;
       case "/limpiar":
-        await replyTelegram(env, await handleClearCache(env));
+        await replyTelegram(env, chatId, await handleClearCache(env));
         break;
       case "/informe":
         await dispatchWorkflow("daily-report.yml", env.GITHUB_TOKEN);
-        await replyTelegram(env, "Generando el informe, te llega en un momento…");
+        await replyTelegram(env, chatId, "Generando el informe, te llega en un momento…");
         break;
       default:
-        await replyTelegram(env, `No reconozco ese comando.\n\n${HELP_TEXT}`);
+        await replyTelegram(env, chatId, `No reconozco ese comando.\n\n${HELP_TEXT}`);
     }
   } catch (err) {
-    await replyTelegram(env, `Uh, algo falló procesando el comando: ${err.message}`);
+    await replyTelegram(env, chatId, `Uh, algo falló procesando el comando: ${err.message}`);
   }
 
   return new Response("ok");
