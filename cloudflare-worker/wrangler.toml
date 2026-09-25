@@ -8,3 +8,8 @@ compatibility_date = "2026-09-22"
 # Telegram (ver src/index.js).
 [triggers]
 crons = ["0 */2 * * *"]
+
+# Transcripción de mensajes de voz de Telegram (comando implícito /agendar
+# por audio) con el modelo Whisper de Cloudflare Workers AI.
+[ai]
+binding = "AI"

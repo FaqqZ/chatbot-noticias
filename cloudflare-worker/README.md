@@ -10,14 +10,20 @@ Este Worker hace dos cosas:
 2. **Recibe los comandos del bot de Telegram por webhook**, no por polling.
    Telegram le pega directo al Worker apenas mandás un mensaje — nada de
    esperar a que un cron revise cada tanto. `/keywords`, `/agregar`,
-   `/quitar`, `/agendar`, `/miagenda` y `/ayuda` se resuelven ahí mismo
-   (leyendo/escribiendo `keywords.yaml` o `agenda.json` vía la API de
-   contenidos de GitHub), así que responden casi al instante. Solo
-   `/informe` dispara GitHub Actions (tarda ~30-60s, porque corre el
-   pipeline de Python que trae y rankea noticias).
+   `/quitar`, `/agendar`, `/miagenda`, `/desagendar` y `/ayuda` se resuelven
+   ahí mismo (leyendo/escribiendo `keywords.yaml` o `agenda.json` vía la API
+   de contenidos de GitHub), así que responden casi al instante. Los
+   mensajes de voz también se manejan acá: se transcriben con el modelo
+   Whisper de **Cloudflare Workers AI** (binding `AI`, ver `wrangler.toml`)
+   y se cargan directo en la agenda, igual que `/agendar`. Solo `/informe`
+   dispara GitHub Actions (tarda ~30-60s, porque corre el pipeline de
+   Python que trae y rankea noticias).
 
 Es gratis: el plan free de Cloudflare Workers incluye Cron Triggers y
-volumen de pedidos muy por encima de lo que este uso necesita.
+volumen de pedidos muy por encima de lo que este uso necesita. Workers AI
+también tiene una cuota diaria gratis (Neurons) que alcanza de sobra para
+transcribir audios cortos ocasionales — no hace falta agregar tarjeta ni
+habilitar nada aparte, el binding en `wrangler.toml` alcanza.
 
 ## Setup (una sola vez)
 

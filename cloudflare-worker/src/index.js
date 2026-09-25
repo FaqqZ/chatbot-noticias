@@ -6,13 +6,17 @@
  *    confiable.
  * 2. `fetch()` en POST /telegram-webhook: recibe los mensajes del bot de
  *    Telegram en tiempo real (webhook, no polling) y resuelve los comandos
- *    simples (/keywords, /eventos, /agregar, /quitar, /limpiar, /ayuda)
- *    directo acá — /keywords y /agregar/quitar leen y escriben
- *    keywords.yaml, /limpiar vacía seen_urls.json, todo vía la API de
- *    contenidos de GitHub; /eventos consulta agendaculturalsmt.com — sin
- *    pasar por GitHub Actions, así que la respuesta es casi instantánea.
- *    Solo /informe dispara GitHub Actions, porque necesita correr el
- *    pipeline de Python (traer RSS, rankear, deduplicar).
+ *    simples (/keywords, /eventos, /agregar, /quitar, /agendar, /miagenda,
+ *    /desagendar, /limpiar, /ayuda) directo acá — /keywords y
+ *    /agregar/quitar leen y escriben keywords.yaml, /agendar/miagenda/
+ *    desagendar leen y escriben agenda.json, /limpiar vacía
+ *    seen_urls.json, todo vía la API de contenidos de GitHub; /eventos
+ *    consulta agendaculturalsmt.com — sin pasar por GitHub Actions, así
+ *    que la respuesta es casi instantánea. Los mensajes de voz se
+ *    transcriben con el modelo Whisper de Cloudflare Workers AI (binding
+ *    `AI`, ver wrangler.toml) y se cargan directo en la agenda, como
+ *    /agendar. Solo /informe dispara GitHub Actions, porque necesita
+ *    correr el pipeline de Python (traer RSS, rankear, deduplicar).
  */
 
 const OWNER = "FaqqZ";
@@ -30,6 +34,7 @@ const HELP_TEXT =
   "/agendar <texto> — anotar algo en tu agenda personal (texto libre)\n" +
   "/miagenda — ver lo que anotaste en tu agenda personal\n" +
   "/desagendar <id> — sacar un ítem de tu agenda personal (el #id sale de /miagenda)\n" +
+  "🎙 mandá un audio — se transcribe y se carga directo en tu agenda, como /agendar\n" +
   "/limpiar — limpiar el caché de noticias vistas (el próximo /informe trae todo de nuevo, incluso lo ya mostrado)\n" +
   "/ayuda — ver esta ayuda";
 
@@ -400,6 +405,27 @@ function allowedChatIds(env) {
     .filter(Boolean);
 }
 
+// Descarga un mensaje de voz de Telegram y lo transcribe con el modelo
+// Whisper de Cloudflare Workers AI (binding "AI" en wrangler.toml). Devuelve
+// el texto transcripto (puede ser "" si Whisper no reconoció nada).
+async function transcribeVoice(env, fileId) {
+  const fileInfoRes = await fetch(
+    `https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/getFile?file_id=${fileId}`
+  );
+  if (!fileInfoRes.ok) throw new Error(`getFile falló: ${fileInfoRes.status}`);
+  const fileInfo = await fileInfoRes.json();
+  const filePath = fileInfo.result.file_path;
+
+  const audioRes = await fetch(`https://api.telegram.org/file/bot${env.TELEGRAM_BOT_TOKEN}/${filePath}`);
+  if (!audioRes.ok) throw new Error(`descarga del audio falló: ${audioRes.status}`);
+  const audioBuffer = await audioRes.arrayBuffer();
+
+  const result = await env.AI.run("@cf/openai/whisper", {
+    audio: [...new Uint8Array(audioBuffer)],
+  });
+  return (result.text || "").trim();
+}
+
 async function handleTelegramWebhook(request, env) {
   const secret = request.headers.get("X-Telegram-Bot-Api-Secret-Token");
   if (secret !== env.WEBHOOK_SECRET) {
@@ -408,11 +434,30 @@ async function handleTelegramWebhook(request, env) {
 
   const update = await request.json();
   const message = update.message;
-  if (!message || typeof message.text !== "string") return new Response("ok");
+  if (!message || !message.chat) return new Response("ok");
 
   const chatId = String(message.chat.id);
-  console.log(`mensaje de chat_id=${chatId} tipo=${message.chat.type} texto=${JSON.stringify(message.text)}`);
+  console.log(
+    `mensaje de chat_id=${chatId} tipo=${message.chat.type} texto=${JSON.stringify(message.text)} voice=${!!message.voice}`
+  );
   if (!allowedChatIds(env).includes(chatId)) return new Response("ignored");
+
+  if (message.voice) {
+    try {
+      const transcript = await transcribeVoice(env, message.voice.file_id);
+      if (!transcript) {
+        await replyTelegram(env, chatId, "No pude transcribir el audio (vino vacío). Probá de nuevo o mandalo por texto.");
+      } else {
+        const added = await handleAddAgendaItem(env, transcript);
+        await replyTelegram(env, chatId, `🎙 "${transcript}"\n\n${added}`);
+      }
+    } catch (err) {
+      await replyTelegram(env, chatId, `Uh, no pude procesar el audio: ${err.message}`);
+    }
+    return new Response("ok");
+  }
+
+  if (typeof message.text !== "string") return new Response("ok");
 
   const text = message.text.trim();
   if (!text.startsWith("/")) return new Response("ok");
